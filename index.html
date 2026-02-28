@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Personal Ordering System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+<style>
+body { font-family: Arial; max-width:600px; margin:auto; padding:15px;}
+input, select, button { width:100%; padding:10px; margin:5px 0;}
+button { background:#2c7be5; color:white; border:none;}
+.card { border:1px solid #ddd; padding:10px; margin-bottom:10px;}
+.hidden { display:none;}
+.flex { display:flex; gap:5px;}
+</style>
+</head>
+<body>
+
+<h2>Personal Ordering System</h2>
+
+<div class="flex">
+<button onclick="showTab('stock')">Stock</button>
+<button onclick="showTab('orders')">Orders</button>
+</div>
+
+<div id="stock">
+
+<h3>Add / Update Stock</h3>
+<input id="itemName" placeholder="Item Name">
+<input type="number" id="itemQty" placeholder="Quantity">
+<input type="number" id="itemPrice" placeholder="Price">
+<button onclick="addStock()">Save</button>
+
+<h3>Current Stock</h3>
+<div id="stockList"></div>
+
+<h3>Create Order</h3>
+<input id="customer" placeholder="Customer Name">
+<select id="orderItem"></select>
+<input type="number" id="orderQty" placeholder="Quantity">
+<select id="payment">
+<option>Paid</option>
+<option>Unpaid</option>
+</select>
+<button onclick="makeOrder()">Submit</button>
+
+</div>
+
+<div id="orders" class="hidden">
+<h3>Orders</h3>
+<div id="orderList"></div>
+<h3>Total Paid Revenue</h3>
+<div id="totalRevenue"></div>
+</div>
+
+<script type="module">
+
+// 🔴 PASTE YOUR FIREBASE CONFIG HERE
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "PASTE_YOURS",
+  authDomain: "PASTE_YOURS",
+  projectId: "PASTE_YOURS",
+  storageBucket: "PASTE_YOURS",
+  messagingSenderId: "PASTE_YOURS",
+  appId: "PASTE_YOURS"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+function showTab(tab){
+document.getElementById("stock").classList.add("hidden");
+document.getElementById("orders").classList.add("hidden");
+document.getElementById(tab).classList.remove("hidden");
+}
+window.showTab = showTab;
+
+async function addStock(){
+let name = itemName.value.trim();
+let qty = parseInt(itemQty.value);
+let price = parseFloat(itemPrice.value);
+if(!name || isNaN(qty) || isNaN(price)) return alert("Fill all");
+
+await addDoc(collection(db,"stock"),{
+name, qty, price
+});
+}
+
+window.addStock = addStock;
+
+async function makeOrder(){
+let customerName = customer.value;
+let item = orderItem.value;
+let qty = parseInt(orderQty.value);
+let paymentStatus = payment.value;
+
+await addDoc(collection(db,"orders"),{
+customer:customerName,
+item, qty,
+payment:paymentStatus,
+date: new Date()
+});
+}
+
+window.makeOrder = makeOrder;
+
+onSnapshot(collection(db,"stock"),(snapshot)=>{
+stockList.innerHTML="";
+orderItem.innerHTML="";
+snapshot.forEach(doc=>{
+let d = doc.data();
+stockList.innerHTML += `<div class="card">${d.name}<br>Qty:${d.qty}<br>RM ${d.price}</div>`;
+orderItem.innerHTML += `<option>${d.name}</option>`;
+});
+});
+
+onSnapshot(collection(db,"orders"),(snapshot)=>{
+orderList.innerHTML="";
+let total=0;
+snapshot.forEach(doc=>{
+let d = doc.data();
+orderList.innerHTML+=`<div class="card">${d.customer}<br>${d.item}<br>Qty:${d.qty}<br>${d.payment}</div>`;
+});
+totalRevenue.innerHTML="(calculation optional)";
+});
+
+</script>
+</body>
+</html>
